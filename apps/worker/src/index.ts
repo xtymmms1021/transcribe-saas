@@ -6,6 +6,7 @@ import { redis } from './lib/redis.js';
 import { s3 } from './lib/s3.js';
 import { getProvider } from './providers/index.js';
 import { applyDiarizationToAsr, runExternalDiarization } from './lib/diarization.js';
+import { runGoogleSttDiarization } from './lib/googleDiarization.js';
 
 type Profile = { id: string; embedding_centroid: string; embedding_count: number };
 
@@ -89,6 +90,9 @@ new Worker(
       let diarizedSegments = result.segments;
       if (diarizationProvider === 'external') {
         const diarSegs = await runExternalDiarization(body, row.original_filename);
+        diarizedSegments = applyDiarizationToAsr(result.segments, diarSegs);
+      } else if (diarizationProvider === 'google') {
+        const diarSegs = await runGoogleSttDiarization(body);
         diarizedSegments = applyDiarizationToAsr(result.segments, diarSegs);
       }
 

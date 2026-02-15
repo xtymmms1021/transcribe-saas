@@ -56,3 +56,20 @@ MinIO Console: <http://localhost:9001>
 - `SPEAKER_AUTO_THRESHOLD=0.78`
 - `SPEAKER_SUGGEST_THRESHOLD=0.70`
 
+
+### Google STT話者分離を使う場合
+1. Google Cloud Speech-to-Text APIを有効化
+2. サービスアカウントJSONを配置（例: `./secrets/gcp-stt.json`）
+3. `.env` に以下を設定
+
+```env
+DIARIZATION_PROVIDER=google
+GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/gcp-stt.json
+GOOGLE_STT_LANGUAGE=ja-JP
+GOOGLE_STT_SPEAKER_COUNT=2
+GOOGLE_STT_MODEL=latest_long
+GOOGLE_STT_ENCODING=MP3
+GOOGLE_STT_SAMPLE_RATE=16000
+```
+
+> 注意: Google diarizationは speakerTag を返します。現在は speakerTag から疑似埋め込みを生成して継続同定に接続しています。

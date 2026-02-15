@@ -27,6 +27,7 @@ services:
       - minio
     volumes:
       - ./apps/worker:/app
+      - ./secrets:/app/secrets:ro
     command: sh -c "npm install && npm run dev"
 
   db:
