@@ -5,6 +5,7 @@ import { db } from './lib/db.js';
 import { redis } from './lib/redis.js';
 import { s3 } from './lib/s3.js';
 import { getProvider } from './providers/index.js';
+import { applyDiarizationToAsr, runExternalDiarization } from './lib/diarization.js';
 
 type Profile = { id: string; embedding_centroid: string; embedding_count: number };
 
@@ -84,6 +85,12 @@ new Worker(
       const obj = await s3.send(new GetObjectCommand({ Bucket: process.env.S3_BUCKET_AUDIO, Key: row.storage_key }));
       const body = await streamToBuffer(obj.Body);
       const result = await provider.transcribeFromBuffer(body, row.original_filename, 'ja');
+      const diarizationProvider = (process.env.DIARIZATION_PROVIDER || 'none').toLowerCase();
+      let diarizedSegments = result.segments;
+      if (diarizationProvider === 'external') {
+        const diarSegs = await runExternalDiarization(body, row.original_filename);
+        diarizedSegments = applyDiarizationToAsr(result.segments, diarSegs);
+      }
 
       const t = await db.query(
         `insert into transcript(user_id,audio_file_id,language,full_text,provider,provider_model,raw_provider_payload)
@@ -91,7 +98,7 @@ new Worker(
         [userId, audioFileId, result.language, result.fullText, result.provider, result.model, result.raw || {}]
       );
 
-      for (const s of result.segments) {
+      for (const s of diarizedSegments) {
         const match = await autoMatchProfile(userId, s.speakerEmbedding);
         const ins = await db.query(
           `insert into transcript_segment(transcript_id,user_id,start_ms,end_ms,speaker_temp_id,text,confidence,speaker_profile_id)

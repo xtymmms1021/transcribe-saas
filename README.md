@@ -41,6 +41,7 @@ MinIO Console: <http://localhost:9001>
 - `POST /api/audio/enqueue/:id`
 - `GET /api/audio/:id`
 - `GET /api/transcripts/:id`
+- `GET /api/transcripts/:id/matches`
 - `POST /api/transcripts/:id/label`
 - `POST /api/transcripts/:id/auto-identify`
 - `GET /api/transcripts/:id/export?format=txt|srt|json`
