@@ -68,6 +68,14 @@ create table if not exists transcript_segment (
   created_at timestamptz not null default now()
 );
 
+create table if not exists segment_embedding (
+  id uuid primary key default uuid_generate_v4(),
+  segment_id uuid unique not null references transcript_segment(id) on delete cascade,
+  user_id uuid not null references app_user(id) on delete cascade,
+  embedding vector(192) not null,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists speaker_match (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references app_user(id) on delete cascade,
@@ -82,3 +90,4 @@ create index if not exists idx_audio_user on audio_file(user_id, created_at desc
 create index if not exists idx_transcript_user on transcript(user_id, created_at desc);
 create index if not exists idx_segment_transcript on transcript_segment(transcript_id, start_ms);
 create index if not exists idx_profile_user on speaker_profile(user_id);
+create index if not exists idx_segment_embedding_user on segment_embedding(user_id);

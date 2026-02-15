@@ -4,6 +4,7 @@ export type Segment = {
   text: string;
   speakerTempId: string;
   confidence?: number;
+  speakerEmbedding?: number[];
 };
 
 export type TranscribeResult = {
