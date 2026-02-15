@@ -8,20 +8,22 @@
 - ユーザーごとのプロジェクト分離
 - 音声アップロード（署名付きURL）
 - Redisキュー投入
-- WorkerによるOpenAI文字起こし
+- Workerによる文字起こし（OpenAI / Gemini provider切替）
 - 文字起こし/セグメント保存
 - 話者ラベル保存（speaker profile）
-- データは全て user_id 紐づけで分離
+- 自動同定の基盤（マッチ履歴、再同定API、埋め込み学習テーブル）
+- エクスポート（txt/srt/json）
 
-## 注意
-- **文字起こし実行には `OPENAI_API_KEY` が必須**
-- 現在のOpenAI実装では話者分離は `SPEAKER_00` 固定（将来、Diarization providerを追加して強化）
-- Provider抽象化済みのため Gemini 実装を追加可能
+## 重要（現状の精度設計）
+- **OPENAIだけでは話者埋め込みを直接取得しにくい**ため、
+  現在は「自動同定の土台」は実装済みだが、埋め込み供給を別providerで強化する前提。
+- そのため、現時点では話者分離精度は限定的（多くが `SPEAKER_00` になる）。
+- 次段でDiarization/Voiceprint provider（外部API）を追加すると、継続同定精度を大幅に上げられる。
 
 ## 起動
 ```bash
 cp .env.example .env
-# .env に OPENAI_API_KEY を設定
+# .env に OPENAI_API_KEY を設定（Geminiを使うなら GEMINI_API_KEY も）
 
 sudo docker compose up -d --build
 ```
@@ -37,7 +39,19 @@ MinIO Console: <http://localhost:9001>
 - `GET/POST /api/projects`
 - `POST /api/audio/upload-url`
 - `POST /api/audio/enqueue/:id`
+- `GET /api/audio/:id`
 - `GET /api/transcripts/:id`
 - `POST /api/transcripts/:id/label`
+- `POST /api/transcripts/:id/auto-identify`
+- `GET /api/transcripts/:id/export?format=txt|srt|json`
 - `GET /api/speakers`
+
+## env（抜粋）
+- `TRANSCRIPTION_PROVIDER=openai|gemini`
+- `OPENAI_API_KEY=...`
+- `OPENAI_TRANSCRIBE_MODEL=gpt-4o-mini-transcribe`
+- `GEMINI_API_KEY=...`
+- `GEMINI_TRANSCRIBE_MODEL=gemini-2.0-flash`
+- `SPEAKER_AUTO_THRESHOLD=0.78`
+- `SPEAKER_SUGGEST_THRESHOLD=0.70`
 
