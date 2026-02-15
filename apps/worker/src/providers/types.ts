@@ -2,13 +2,8 @@ export type Segment = {
   startMs: number;
   endMs: number;
   text: string;
-  speakerTempId?: string;
+  speakerTempId: string;
   confidence?: number;
-};
-
-export type TranscribeInput = {
-  audioPath: string;
-  language?: string;
 };
 
 export type TranscribeResult = {
@@ -22,6 +17,5 @@ export type TranscribeResult = {
 
 export interface TranscriptionProvider {
   name: string;
-  transcribe(input: TranscribeInput): Promise<TranscribeResult>;
-  health(): Promise<{ ok: boolean; message?: string }>;
+  transcribeFromBuffer(buffer: Buffer, filename: string, language?: string): Promise<TranscribeResult>;
 }

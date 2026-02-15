@@ -1,36 +1,36 @@
-import fs from "node:fs";
-import OpenAI from "openai";
-import type { TranscribeInput, TranscribeResult, TranscriptionProvider } from "./types.js";
+import OpenAI from 'openai';
+import type { TranscribeResult, TranscriptionProvider } from './types.js';
 
 export class OpenAIProvider implements TranscriptionProvider {
-  name = "openai";
+  name = 'openai';
   private client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  private model = process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-4o-mini-transcribe";
+  private model = process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe';
 
-  async transcribe(input: TranscribeInput): Promise<TranscribeResult> {
-    const file = fs.createReadStream(input.audioPath);
+  async transcribeFromBuffer(buffer: Buffer, filename: string, language = 'ja'): Promise<TranscribeResult> {
+    const file = await OpenAI.toFile(buffer, filename);
     const res: any = await this.client.audio.transcriptions.create({
       file,
       model: this.model,
-      language: input.language || "ja"
+      language
     });
 
+    const segs = Array.isArray(res.segments) && res.segments.length
+      ? res.segments.map((s: any) => ({
+          startMs: Math.round((s.start ?? 0) * 1000),
+          endMs: Math.round((s.end ?? 0) * 1000),
+          text: s.text ?? '',
+          speakerTempId: 'SPEAKER_00',
+          confidence: typeof s.avg_logprob === 'number' ? s.avg_logprob : undefined
+        }))
+      : [{ startMs: 0, endMs: 0, text: res.text || '', speakerTempId: 'SPEAKER_00' }];
+
     return {
-      language: input.language || "ja",
-      fullText: res.text ?? "",
-      segments: (res.segments || []).map((s: any) => ({
-        startMs: Math.round((s.start ?? 0) * 1000),
-        endMs: Math.round((s.end ?? 0) * 1000),
-        text: s.text ?? "",
-        confidence: typeof s.avg_logprob === "number" ? s.avg_logprob : undefined
-      })),
-      provider: this.name,
+      language,
+      fullText: res.text || segs.map((s: any) => s.text).join(' '),
+      segments: segs,
+      provider: 'openai',
       model: this.model,
       raw: res
     };
-  }
-
-  async health() {
-    return { ok: Boolean(process.env.OPENAI_API_KEY), message: "OPENAI_API_KEY" };
   }
 }
